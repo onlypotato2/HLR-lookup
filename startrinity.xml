@@ -1,0 +1,24 @@
+<callxml type="custom">
+    <accept value="180" />
+
+
+    <!-- remove first 3 digits (tech prefix) in B number before making the HLR API request -->
+    <substring var="calledId2" value="$calledId;" startIndex="2" />
+
+    <sendhttprequest 
+        value="https://api.hlrlookup.com/apiv2/hlr" 
+        method="POST" 
+        headers="Content-Type: application/json" 
+        body='{"api_key": "ed04c9ee-50db-11f0-b91f-8e650d035917", "api_secret": "TbQ3gS7WkGczWk0p7e96qISsnczYa0kSSCzSHgHB", "requests": [{"telephone_number": "$calledId2;"}]}' 
+        statusvar="status1" 
+        contentvar="result1" />
+    <log value="api request#1 (HLR status) for msisdn=$calledId;: status=$status1; result=$result1;" />
+    <if test="($result1; contains '\"live_status\":\"LIVE\"') == false" >
+        <log value="rejecting call: number $calledId; is not live (HLR)" />
+        <reject value="503" />
+        <exit/>
+    </if>
+
+    <transfer terminators="routed" />
+
+</callxml>

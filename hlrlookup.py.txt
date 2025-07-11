@@ -1,0 +1,50 @@
+
+from flask import Flask, request
+import requests
+
+app = Flask(__name__)
+
+@app.route("/full-check", methods=["POST"])
+def full_check():
+    try:
+        data = request.get_json()
+        caller_id = data.get("callerId")
+
+        if not caller_id:
+            return "status=error; reason=missing callerId", 400
+
+        hlr_url = "https://api.hlrlookup.com/apiv2/hlr"
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            "api_key": "ed04c9ee-50db-11f0-b91f-8e650d035917",
+            "api_secret": "TbQ3gS7WkGczWk0p7e96qISsnczYa0kSSCzSHgHB",
+            "requests": [
+                {"telephone_number": caller_id}
+            ]
+        }
+
+        response = requests.post(hlr_url, headers=headers, json=payload)
+        if response.status_code != 200:
+            return f"status=error; reason=HTTP {response.status_code}", 400
+
+        json_result = response.json()
+        result = json_result.get("results", [{}])[0]
+        live = result.get("live_status")
+        number_type = result.get("telephone_number_type")
+
+        if live == "LIVE" and number_type == "MOBILE":
+            return "status=valid"
+        else:
+            return "status=invalid"
+
+    except Exception as e:
+        return f"status=error; reason={str(e)}", 500
+
+@app.route("/test", methods=["GET"])
+def test():
+    return "Flask server working"
+
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=5000)
